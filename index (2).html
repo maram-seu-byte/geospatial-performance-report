@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تقرير أداء القطاع الجيومكاني - أغسطس 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand: #0B4F6C;
+      --accent: #01BAEF;
+      --accent-2: #75C5F0;
+      --muted: #A2D6F0;
+      --ink: #0B4F6C;
+      --bg: #F0F0F0;
+      --card: #ffffff;
+    }
+    html, body { height: 100%; }
+    body { font-family: 'Cairo', sans-serif; background: var(--bg); color: #1f2937; }
+    .kpi-card { background: var(--brand); color: #fff; border-radius: .75rem; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    .kpi-number { font-size: 3.5rem; line-height: 1; font-weight: 900; color: var(--accent); }
+    .kpi-label { font-weight: 700; }
+    .chart-container { position: relative; width: 100%; max-width: 640px; margin-inline: auto; height: 360px; }
+    @media (max-width:768px){ .chart-container{ height:300px } }
+    .active-tab { outline: 2px solid var(--accent); outline-offset: 2px }
+  </style>
+</head>
+<body>
+  <div class="container mx-auto p-4 md:p-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-3 mb-6">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--brand)]">تقرير أداء القطاع الجيومكاني</h1>
+      <span class="px-3 py-1 rounded-full bg-[var(--accent-2)]/20 text-[var(--brand)] text-sm font-bold">أغسطس 2025</span>
+    </div>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div class="kpi-card p-6 text-center">
+        <div class="kpi-number">85</div>
+        <div class="kpi-label">إجمالي المشاريع</div>
+      </div>
+      <div class="kpi-card p-6 text-center">
+        <div class="kpi-number">64</div>
+        <div class="kpi-label">إجمالي الكوادر الفنية</div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">حالة المشاريع الإجمالية</h2>
+        <div class="chart-container"><canvas id="projectStatusChart"></canvas></div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">مقارنة يوليو - أغسطس</h2>
+        <div class="chart-container"><canvas id="projectsComparisonChart"></canvas></div>
+      </div>
+    </section>
+  </div>
+
+<script>
+const statusData = {
+  labels: ['قائمة','بانتظار','منتهية','جديدة'],
+  datasets: [{ data:[44,17,17,7], backgroundColor:['#01BAEF','#75C5F0','#0B4F6C','#A2D6F0'] }]
+};
+new Chart(document.getElementById('projectStatusChart'), { type:'doughnut', data: statusData });
+
+new Chart(document.getElementById('projectsComparisonChart'), {
+  type:'bar',
+  data:{
+    labels:['قائمة','بانتظار','منتهية','جديدة'],
+    datasets:[
+      {label:'يوليو', data:[32,21,14,4], backgroundColor:'#75C5F0'},
+      {label:'أغسطس', data:[44,17,17,7], backgroundColor:'#01BAEF'}
+    ]
+  }
+});
+</script>
+</body>
+</html>
