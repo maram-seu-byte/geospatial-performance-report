@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>البرنامج التشغيلي للإطار الإداري والصلاحيات</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:'Tajawal',sans-serif;
+  background:#f4f7f6;
+  color:#2c3e50;
+}
+.container{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  width:280px;
+  background:#2c3e50;
+  color:#fff;
+  padding:20px
+}
+.sidebar h2{margin-bottom:20px;font-size:1.1rem}
+.sidebar button{
+  width:100%;
+  background:none;
+  border:none;
+  color:#fff;
+  padding:12px;
+  margin-bottom:6px;
+  text-align:right;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:.9rem
+}
+.sidebar button:hover,
+.sidebar button.active{background:#3498db}
+
+/* Content */
+.content{flex:1;padding:30px}
+.section{display:none}
+.section.active{display:block}
+
+/* Cards */
+.card{
+  background:#fff;
+  padding:22px;
+  border-radius:12px;
+  box-shadow:0 4px 8px rgba(0,0,0,.08);
+  margin-bottom:20px
+}
+
+/* Expandable intro cards */
+.expandable{
+  cursor:pointer;
+  position:relative;
+}
+.expandable h2{margin:0}
+.card-content{
+  max-height:0;
+  overflow:hidden;
+  transition:max-height .4s ease, opacity .3s ease;
+  border-right:3px dashed #3498db;
+  padding-right:15px;
+  margin-top:10px;
+  opacity:0;
+}
+.expandable.active .card-content{
+  max-height:2000px;
+  opacity:1;
+}
+.expandable::after{
+  content:"⯈";
+  position:absolute;
+  left:20px;
+  top:22px;
+  font-size:1.2rem;
+  transition:transform .3s ease;
+}
+.expandable.active::after{
+  transform:rotate(90deg);
+}
+
+/* Stats */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:20px
+}
+.stat{text-align:center}
+.stat .value{
+  font-size:1.8rem;
+  font-weight:700;
+  color:#3498db
+}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th,td{
+  padding:12px;
+  border-bottom:1px solid #eee;
+  text-align:right
+}
+th{background:#f8f9fa}
+
+/* Buttons */
+.btn{
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer
+}
+.approve{background:#27ae60;color:#fff}
+.reject{background:#e74c3c;color:#fff}
+
+/* Badges */
+.badge{
+  padding:4px 10px;
+  border-radius:20px;
+  font-size:.75rem;
+  color:#fff
+}
+.pending{background:#f1c40f;color:#000}
+.approved{background:#27ae60}
+.rejected{background:#e74c3c}
+
+/* Workflow */
+.workflow li{margin-bottom:8px}
+.active-step{color:#27ae60;font-weight:bold}
+
+/* Org */
+.org{
+  display:flex;
+  flex-direction:column;
+  align-items:center
+}
+.level{
+  display:flex;
+  gap:40px;
+  margin-bottom:30px
+}
+.org .card{
+  text-align:center;
+  min-width:220px
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- القائمة -->
+<div class="sidebar">
+  <h2>النظام التشغيلي</h2>
+  <button class="active" onclick="show('program')">مقدمة البرنامج</button>
+  <button onclick="show('dashboard')">لوحة المؤشرات</button>
+  <button onclick="show('decisions')">إدارة القرارات</button>
+  <button onclick="show('workflow')">Workflow</button>
+  <button onclick="show('org')">الهيكل التنظيمي للفريق</button>
+</div>
+
+<!-- المحتوى -->
+<div class="content">
+
+<!-- مقدمة البرنامج (كروت) -->
+<div id="program" class="section active">
+  <h1>البرنامج التشغيلي للإطار الإداري والصلاحيات</h1>
+  <p><strong>Administrative Execution & Governance Program</strong></p>
+
+  <div class="card expandable" onclick="toggleCard(this)">
+    <h2>1. مقدمة البرنامج</h2>
+    <div class="card-content">
+      <p>
+        يهدف هذا البرنامج إلى تحويل الإطار الإداري والصلاحيات المعتمدة
+        من توصيف تنظيمي إلى ممارسة تشغيلية يومية واضحة، قابلة للقياس،
+        وتعمل بكفاءة منذ اليوم الأول.
+      </p>
+      <p>
+        يركّز البرنامج على دعم تطبيق الصلاحيات، ضبط آلية اتخاذ القرار،
+        وتخفيف العبء التشغيلي عن المدير العام، مع ضمان وضوح الأدوار
+        والمسؤوليات بين الإدارات.
+      </p>
+      <p>
+        لا يغيّر البرنامج التوجه العام أو الصلاحيات المعتمدة،
+        وإنما يوفّر آلية تشغيل تحمي القرار وتمنع التعارضات.
+      </p>
+    </div>
+  </div>
+
+  <div class="card expandable" onclick="toggleCard(this)">
+    <h2>2. أهداف البرنامج</h2>
+    <div class="card-content">
+      <ul>
+        <li>ضمان تنفيذ التوجيهات الإدارية دون تأخير أو تضارب</li>
+        <li>تنظيم استخدام الصلاحيات المفوضة</li>
+        <li>تسريع اتخاذ القرار التشغيلي</li>
+        <li>توحيد أسلوب المتابعة بين الإدارات</li>
+        <li>قياس جدية التطبيق خلال فترة تجريبية</li>
+        <li>بناء نموذج قابل للتوسع مستقبلًا</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card expandable" onclick="toggleCard(this)">
+    <h2>3. نطاق البرنامج</h2>
+    <div class="card-content">
+      <strong>يشمل:</strong>
+      <ul>
+        <li>القرارات التشغيلية اليومية</li>
+        <li>آلية المتابعة والتنفيذ</li>
+        <li>استخدام الصلاحيات المفوضة</li>
+        <li>التنسيق بين الإدارات</li>
+        <li>التقارير الدورية</li>
+      </ul>
+      <strong>لا يشمل:</strong>
+      <ul>
+        <li>القرارات الاستراتيجية العليا</li>
+        <li>التعيينات أو إنهاء الخدمات</li>
+        <li>القرارات المالية خارج السقف المعتمد</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card expandable" onclick="toggleCard(this)">
+    <h2>4. آلية التنفيذ والمتابعة</h2>
+    <div class="card-content">
+      <ol>
+        <li>إصدار القرار</li>
+        <li>تحديد الجهة المسؤولة عن التنفيذ</li>
+        <li>تحديد المدة الزمنية</li>
+        <li>متابعة التنفيذ</li>
+        <li>إغلاق القرار وتوثيق نتيجته</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- لوحة المؤشرات -->
+<div id="dashboard" class="section">
+  <h1>لوحة المؤشرات</h1>
+  <div class="stats">
+    <div class="card stat"><div class="value">82%</div>استقلالية القرار</div>
+    <div class="card stat"><div class="value">1.4 يوم</div>زمن التنفيذ</div>
+    <div class="card stat"><div class="value">95%</div>الالتزام بالتقارير</div>
+  </div>
+</div>
+
+<!-- القرارات -->
+<div id="decisions" class="section">
+  <h1>إدارة القرارات</h1>
+  <div class="card">
+    <input id="dText" placeholder="وصف القرار" style="width:60%;padding:8px">
+    <select id="dType">
+      <option>تشغيلي</option>
+      <option>تكتيكي</option>
+      <option>استراتيجي</option>
+    </select>
+    <button class="btn approve" onclick="addDecision()">إضافة</button>
+  </div>
+
+  <div class="card">
+    <table id="dTable">
+      <tr>
+        <th>القرار</th><th>النوع</th><th>الحالة</th><th>إجراء</th>
+      </tr>
+      <tr>
+        <td>اعتماد خطة تشغيل</td>
+        <td>تشغيلي</td>
+        <td><span class="badge pending">قيد المراجعة</span></td>
+        <td>
+          <button class="btn approve" onclick="approve(this)">اعتماد</button>
+          <button class="btn reject" onclick="reject(this)">رفض</button>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- Workflow -->
+<div id="workflow" class="section">
+  <h1>محاكاة Workflow</h1>
+  <div class="card">
+    <ol class="workflow" id="flow">
+      <li>إدخال القرار</li>
+      <li>مراجعة تشغيلية</li>
+      <li>اعتماد</li>
+      <li>تنفيذ</li>
+      <li>إغلاق</li>
+    </ol>
+    <button class="btn approve" onclick="next()">التالي</button>
+  </div>
+</div>
+
+<!-- الهيكل التنظيمي -->
+<div id="org" class="section">
+  <h1>الهيكل التنظيمي للفريق</h1>
+  <div class="org">
+    <div class="level">
+      <div class="card">المدير العام<br><small>توجيه واعتماد</small></div>
+    </div>
+    <div class="level">
+      <div class="card">قائد التشغيل الإداري</div>
+    </div>
+    <div class="level">
+      <div class="card">منسق إداري</div>
+      <div class="card">دعم تشغيلي</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function toggleCard(card){
+  card.classList.toggle('active');
+}
+
+function approve(btn){
+  btn.parentElement.previousElementSibling.innerHTML='<span class="badge approved">معتمد</span>';
+}
+function reject(btn){
+  btn.parentElement.previousElementSibling.innerHTML='<span class="badge rejected">مرفوض</span>';
+}
+function addDecision(){
+  let t=dText.value;
+  let type=dType.value;
+  if(!t)return;
+  dTable.insertRow().innerHTML=`
+    <td>${t}</td>
+    <td>${type}</td>
+    <td><span class="badge pending">قيد المراجعة</span></td>
+    <td>
+      <button class="btn approve" onclick="approve(this)">اعتماد</button>
+      <button class="btn reject" onclick="reject(this)">رفض</button>
+    </td>`;
+  dText.value='';
+}
+
+let step=0;
+function next(){
+  let items=document.querySelectorAll('#flow li');
+  if(step<items.length){
+    items[step].classList.add('active-step');
+    step++;
+  }
+}
+</script>
+
+</body>
+</html>
