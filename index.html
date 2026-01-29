@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>تقرير أداء القطاع الجيومكاني - أغسطس 2025</title>
+  <title>تقرير أداء القطاع الجيومكاني - أغسطس 2025 (نسخة تفاعلية)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,10 +11,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --brand: #0B4F6C;
-      --accent: #01BAEF;
-      --accent-2: #75C5F0;
-      --muted: #A2D6F0;
+      --brand: #0B4F6C; /* Deep Blue */
+      --accent: #01BAEF; /* Sky Blue */
+      --accent-2: #75C5F0; /* Light Blue */
+      --muted: #A2D6F0; /* Muted */
       --ink: #0B4F6C;
       --bg: #F0F0F0;
       --card: #ffffff;
@@ -26,56 +26,434 @@
     .kpi-label { font-weight: 700; }
     .chart-container { position: relative; width: 100%; max-width: 640px; margin-inline: auto; height: 360px; }
     @media (max-width:768px){ .chart-container{ height:300px } }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); display:none; place-items:center; z-index:1000 }
+    .modal-content { background:#fff; width:min(92vw,720px); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); }
+    .loading-spinner { border: 4px solid rgba(0,0,0,.1); border-left-color: var(--accent); width: 3rem; height: 3rem; border-radius: 999px; animation: spin 1s linear infinite }
+    @keyframes spin { to { transform: rotate(360deg) } }
     .active-tab { outline: 2px solid var(--accent); outline-offset: 2px }
+    .details-table th, .details-table td { white-space: nowrap; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    /* Dark mode */
+    .dark body, body.dark { background:#0f172a; color:#e5e7eb }
+    body.dark .kpi-card{ background:#0B4F6C }
+    body.dark .card{ background:#0b1220 }
   </style>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-800">
   <div class="container mx-auto p-4 md:p-8">
+    <!-- Top bar -->
     <div class="flex flex-col md:flex-row items-center justify-between gap-3 mb-6">
-      <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--brand)]">تقرير أداء القطاع الجيومكاني</h1>
-      <span class="px-3 py-1 rounded-full bg-[var(--accent-2)]/20 text-[var(--brand)] text-sm font-bold">أغسطس 2025</span>
+      <div class="flex items-center gap-3">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--brand)]">تقرير أداء القطاع الجيومكاني</h1>
+        <span class="px-3 py-1 rounded-full bg-[var(--accent-2)]/20 text-[var(--brand)] text-sm font-bold">أغسطس 2025</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="exportCsvBtn" class="px-3 py-2 rounded-lg bg-[var(--brand)] text-white text-sm font-bold hover:bg-opacity-90">تصدير المشاريع CSV</button>
+        <button id="printBtn" class="px-3 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-bold hover:bg-opacity-90">طباعة / PDF</button>
+        <button id="themeBtn" class="px-3 py-2 rounded-lg border border-[var(--brand)] text-[var(--brand)] text-sm font-bold hover:bg-[var(--brand)] hover:text-white">الوضع الداكن</button>
+      </div>
     </div>
 
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-      <div class="kpi-card p-6 text-center">
-        <div class="kpi-number">85</div>
-        <div class="kpi-label">إجمالي المشاريع</div>
-      </div>
-      <div class="kpi-card p-6 text-center">
-        <div class="kpi-number">64</div>
-        <div class="kpi-label">إجمالي الكوادر الفنية</div>
+    <!-- Nav -->
+    <nav class="flex justify-center md:justify-start gap-3 mb-8 sticky top-0 bg-gray-100/80 backdrop-blur py-3 z-50 rounded-xl">
+      <button data-section="dashboard-section" class="tab px-4 py-2 bg-[var(--brand)] text-white font-bold rounded-lg shadow-md hover:bg-opacity-90">الرئيسية</button>
+      <button data-section="staff-details-section" class="tab px-4 py-2 bg-[var(--brand)] text-white font-bold rounded-lg shadow-md hover:bg-opacity-90">تفاصيل الكوادر</button>
+      <button data-section="project-details-section" class="tab px-4 py-2 bg-[var(--brand)] text-white font-bold rounded-lg shadow-md hover:bg-opacity-90">تفاصيل المشاريع</button>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard-section">
+      <header class="text-center mb-8">
+        <p class="text-xl text-[var(--accent)] font-bold">نظرة تنفيذية</p>
+        <button id="summaryBtn" class="mt-4 px-6 py-2 bg-[var(--accent)] text-white font-bold rounded-lg shadow hover:bg-opacity-90">✨ إنشاء ملخص الأداء ✨</button>
+      </header>
+
+      <!-- KPIs -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div class="kpi-card p-6 text-center">
+          <div id="kpiTotalProjects" class="kpi-number">85</div>
+          <div class="kpi-label">إجمالي المشاريع</div>
+        </div>
+        <div class="kpi-card p-6 text-center">
+          <div id="kpiTotalStaff" class="kpi-number">64</div>
+          <div class="kpi-label">إجمالي الكوادر الفنية</div>
+        </div>
+      </section>
+
+      <!-- Charts row 1 -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div class="card bg-white rounded-lg shadow p-6">
+          <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">حالة المشاريع الإجمالية</h2>
+          <p class="text-center text-gray-600 mb-4">توزيع مشاريع أغسطس حسب الحالة.</p>
+          <div class="chart-container"><canvas id="projectStatusChart" aria-label="مخطط حالة المشاريع" role="img"></canvas></div>
+          <div class="flex justify-center mt-3">
+            <button class="downloadChart px-3 py-1.5 text-xs bg-[var(--accent-2)] text-[var(--brand)] rounded">تحميل صورة المخطط</button>
+          </div>
+        </div>
+        <div class="card bg-white rounded-lg shadow p-6">
+          <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">تطور عدد المشاريع (يوليو - أغسطس)</h2>
+          <p class="text-center text-gray-600 mb-4">مقارنة مرحلية لإبراز التغير.</p>
+          <div class="chart-container"><canvas id="projectsComparisonChart"></canvas></div>
+          <div class="flex justify-center mt-3">
+            <button class="downloadChart px-3 py-1.5 text-xs bg-[var(--accent-2)] text-[var(--brand)] rounded">تحميل صورة المخطط</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Forecast -->
+      <section class="card bg-white rounded-lg shadow p-6 mb-12">
+        <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">توقعات الأداء للربع القادم (سبتمبر - نوفمبر)</h2>
+        <p class="text-center text-gray-600 mb-4">تحليل استباقي مبسط بناءً على الاتجاهات الحالية.</p>
+        <div class="flex justify-center"><button id="forecastBtn" class="px-6 py-2 bg-[var(--brand)] text-white font-bold rounded-lg shadow hover:bg-opacity-90">✨ توليد التوقعات ✨</button></div>
+      </section>
+
+      <!-- Departments analytics -->
+      <section class="mb-12">
+        <h2 class="text-3xl font-bold text-[var(--brand)] mb-6 text-center">تحليل الأداء حسب الإدارات</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div class="lg:col-span-2 card bg-white rounded-lg shadow p-6">
+            <h3 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">توزيع الكوادر الفنية</h3>
+            <p class="text-center text-gray-600 mb-4">نسبة توزيع الموظفين على الإدارات.</p>
+            <div class="chart-container"><canvas id="staffDistributionChart"></canvas></div>
+          </div>
+          <div class="lg:col-span-3 card bg-white rounded-lg shadow p-6">
+            <h3 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">حالة المشاريع في كل إدارة</h3>
+            <p class="text-center text-gray-600 mb-4">مقارنة مكدَّسة حسب الإدارة.</p>
+            <div class="chart-container h-[420px]"><canvas id="departmentProjectsChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Issues & Actions -->
+      <section>
+        <h2 class="text-3xl font-bold text-[var(--brand)] mb-6 text-center">أبرز التحديات والإجراءات التصحيحية</h2>
+        <div id="issuesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"></div>
+        <div class="text-center">
+          <button id="actionPlanBtn" class="px-6 py-2 bg-[var(--brand)] text-white font-bold rounded-lg shadow hover:bg-opacity-90">✨ توليد خطة عمل ✨</button>
+        </div>
+      </section>
+    </section>
+
+    <!-- STAFF DETAILS -->
+    <section id="staff-details-section" class="hidden">
+      <h2 class="text-4xl font-extrabold text-[var(--brand)] mb-6 text-center">تفاصيل الكوادر</h2>
+      <div class="card bg-white rounded-lg shadow p-6">
+        <h3 class="text-2xl font-bold text-[var(--brand)] mb-4">توزيع الكوادر حسب الوحدات الإدارية</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-right details-table">
+            <thead>
+              <tr class="bg-gray-200 text-gray-600 uppercase text-sm">
+                <th class="py-3 px-6 text-right">القسم/الوحدة</th>
+                <th class="py-3 px-6 text-right">عدد الكوادر</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-700 text-sm">
+              <tr class="border-b border-gray-200 hover:bg-gray-50"><td class="py-3 px-6">إدارة الخدمات والحلول الجيومكانية الذكية</td><td class="py-3 px-6 font-bold">42</td></tr>
+              <tr class="border-b border-gray-200 hover:bg-gray-50"><td class="py-3 px-6">إدارة نظم معلومات جغرافية وتطبيقات ذكية</td><td class="py-3 px-6 font-bold">15</td></tr>
+              <tr class="border-b border-gray-200 hover:bg-gray-50"><td class="py-3 px-6">مكتب إدارة المشاريع</td><td class="py-3 px-6 font-bold">5</td></tr>
+              <tr class="border-b border-gray-200 hover:bg-gray-50"><td class="py-3 px-6">وحدة المساحة الأرضية</td><td class="py-3 px-6 font-bold">18</td></tr>
+              <tr class="border-b border-gray-200 hover:bg-gray-50"><td class="py-3 px-6">وحدة الرفع المساحي للبنية التحتية والخدمات</td><td class="py-3 px-6 font-bold">8</td></tr>
+              <tr class="border-b border-gray-200 hover:bg-gray-50"><td class="py-3 px-6">وحدة الاستشعار عن بعد</td><td class="py-3 px-6 font-bold">12</td></tr>
+              <tr class="hover:bg-gray-50"><td class="py-3 px-6">وحدة المعاملات العقارية</td><td class="py-3 px-6 font-bold">4</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">حالة المشاريع الإجمالية</h2>
-        <div class="chart-container"><canvas id="projectStatusChart"></canvas></div>
+    <!-- PROJECT DETAILS -->
+    <section id="project-details-section" class="hidden">
+      <h2 class="text-4xl font-extrabold text-[var(--brand)] mb-6 text-center">تفاصيل المشاريع</h2>
+      <div class="flex flex-wrap gap-3 mb-4">
+        <button data-dept="services" class="deptBtn px-4 py-2 bg-[var(--accent)] text-white font-bold rounded-lg shadow hover:bg-opacity-90">إدارة الخدمات</button>
+        <button data-dept="pmo" class="deptBtn px-4 py-2 bg-[var(--accent)] text-white font-bold rounded-lg shadow hover:bg-opacity-90">مكتب إدارة المشاريع</button>
+        <button data-dept="gis" class="deptBtn px-4 py-2 bg-[var(--accent)] text-white font-bold rounded-lg shadow hover:bg-opacity-90">إدارة نظم المعلومات الجغرافية</button>
       </div>
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold text-[var(--brand)] mb-2 text-center">مقارنة يوليو - أغسطس</h2>
-        <div class="chart-container"><canvas id="projectsComparisonChart"></canvas></div>
+      <div class="card bg-white rounded-lg shadow p-6">
+        <h3 id="project-section-title" class="text-2xl font-bold text-[var(--brand)] mb-4"></h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-right details-table">
+            <thead>
+              <tr class="bg-gray-200 text-gray-600 uppercase text-sm">
+                <th class="py-3 px-6 text-right">اسم المشروع</th>
+                <th class="py-3 px-6 text-right">الجهة</th>
+                <th class="py-3 px-6 text-right">الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="projects-table-body" class="text-gray-700 text-sm"></tbody>
+          </table>
+        </div>
       </div>
     </section>
+
+    <footer class="text-center mt-12 pt-8 border-t border-gray-300">
+      <p class="text-gray-600">تقرير أداء القطاع الجيومكاني | شركة القطر للاستشارات</p>
+    </footer>
   </div>
 
-<script>
-const statusData = {
-  labels: ['قائمة','بانتظار','منتهية','جديدة'],
-  datasets: [{ data:[44,17,17,7], backgroundColor:['#01BAEF','#75C5F0','#0B4F6C','#A2D6F0'] }]
-};
-new Chart(document.getElementById('projectStatusChart'), { type:'doughnut', data: statusData });
+  <!-- Modal -->
+  <div id="llmModal" class="modal-overlay" aria-modal="true" role="dialog">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-3">
+        <h3 id="modalTitle" class="text-xl font-bold text-[var(--brand)]"></h3>
+        <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700 text-3xl font-bold" aria-label="إغلاق">&times;</button>
+      </div>
+      <div id="modalBody" class="text-gray-700">
+        <div id="loading" class="grid place-content-center"><div class="loading-spinner" aria-hidden="true"></div></div>
+        <div id="responseContent" class="hidden whitespace-pre-line leading-8"></div>
+        <button id="ttsButton" class="mt-4 px-6 py-2 bg-purple-600 text-white font-bold rounded-lg shadow hover:bg-opacity-90 hidden">✨ قراءة الملخص بصوت عالٍ ✨</button>
+      </div>
+    </div>
+  </div>
 
-new Chart(document.getElementById('projectsComparisonChart'), {
-  type:'bar',
-  data:{
-    labels:['قائمة','بانتظار','منتهية','جديدة'],
-    datasets:[
-      {label:'يوليو', data:[32,21,14,4], backgroundColor:'#75C5F0'},
-      {label:'أغسطس', data:[44,17,17,7], backgroundColor:'#01BAEF'}
-    ]
-  }
-});
-</script>
+  <script>
+    // ===== Data layer =====
+    const data = {
+      totals: { projects: 85, staff: 64 },
+      status: { ongoing: 44, waiting: 17, completed: 17, new: 7 },
+      july: { ongoing: 32, waiting: 21, completed: 14, new: 4 },
+      august: { ongoing: 44, waiting: 17, completed: 17, new: 7 },
+      staffDistribution: { services: 42, gis: 15, pmo: 5, other: 2 },
+      deptProjects: {
+        labels: ['إدارة الخدمات والحلول الذكية', 'مكتب إدارة المشاريع', 'إدارة نظم المعلومات والتطبيقات الذكية'],
+        ongoing: [18, 8, 6], waiting: [15, 1, 1], done: [12, 2, 2]
+      },
+      issues: [
+        { title: 'عدم اكتمال رفع البيانات', tag: 'AECOM Detailed Survey Historic Diriyah Project', problem: 'المدرجات غير مرفوعة بالكامل مع ضعف المتابعة الدقيقة للمساحين.' },
+        { title: 'جودة صور البنش مارك', tag: 'مشروع الحناكية', problem: 'صور البنش مارك المقدمة غير واضحة مما يؤثر على دقة الإسناد.' },
+        { title: 'اختلاف وتضارب البيانات', tag: '3D Mapping - Al Khobar Compound', problem: 'وجود رفع مساحي مختلف لنفس المبنى وتضارب في الأوامر من عدة جهات.' },
+        { title: 'فروقات في الارتفاعات', tag: 'Rua al Haram - PO1', problem: 'وجود فروقات في الارتفاعات تصل إلى 10 سم حسب ملاحظات العميل.' },
+        { title: 'سوء تقدير في التسعير', tag: '3D Mapping-Al Khobar Compound', problem: 'فروقات بين التكاليف الفعلية والتقديرات الأولية للمشروع.' }
+      ],
+      projects: {
+        services: [
+          { name: 'QPMO-410-RP-05126 Surveying - Speed Park Track', client: 'Qiddiya Company', status: 'جديد' },
+          { name: 'Hilltop Hotel-Topographic Drone & Geomechanical Surveys', client: 'BSBG', status: 'مخطط' },
+          { name: 'Green Riyadh Project - GPR', client: 'PARSON', status: 'قائم' },
+          { name: '3D Mapping-Al Khobar Compound', client: 'NOON', status: 'قائم' },
+          { name: 'رفع مساحي وتحديث صك شركة عقالات', client: 'شركة عقالات', status: 'بانتظار الموافقة' },
+          { name: 'مشروع فرز قطع اراضي لمخطط سابك رقم 178', client: 'سابك', status: 'منجز' },
+          { name: 'P03 - اتفاقية إطارية للرفع المساحي و فرز الأراضي', client: 'حديقة الملك سلمان', status: 'منجز' }
+        ],
+        pmo: [
+          { name: 'Tanmiah Operational Costs for Marafy Lands Expropriation', client: 'TANMIAH & ROSHN', status: 'جديد' },
+          { name: 'الرفع المساحي لقطع متعارضة مع تطوير المحاور (المرحلة الأولى)', client: 'الهيئة الملكية لمدينة الرياض', status: 'منجز فنياً' },
+          { name: 'استملاك الأراضي (تنمية)', client: 'شركة تطوير المربع الجديد', status: 'منجز فنياً' },
+          { name: 'صيانة وتشغيل GIS في أمانة جدة', client: 'أمانة جدة', status: 'مخطط' },
+          { name: 'إنهاء إجراءات المنح – المرحلة الأولى', client: 'أمانة الرياض', status: 'جديد' }
+        ],
+        gis: [
+          { name: 'Land Valuation for Landbridge Railway', client: 'SAR', status: 'قائم' },
+          { name: 'تشغيل وصيانة نظام GIS 2025', client: 'هيئة الزكاة والضريبة والجمارك', status: 'جديد' },
+          { name: 'تطبيق التقييم العقاري', client: 'داخلي', status: 'قائم' },
+          { name: 'تطبيق متابعة المساحين', client: 'داخلي', status: 'قائم' },
+          { name: 'STAGE1: Data Collection – CADC', client: 'CADC', status: 'قائم' }
+        ]
+      }
+    };
+
+    // ===== Utilities =====
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+    const wrapLabel = (label) => {
+      const max = 16; if (!label || label.length <= max) return label;
+      const words = label.split(' '), lines = []; let cur='';
+      for (const w of words){ if ((cur + ' ' + w).trim().length > max){ lines.push(cur.trim()); cur = w; } else { cur = (cur + ' ' + w).trim(); } }
+      if (cur) lines.push(cur.trim()); return lines;
+    };
+    const downloadCanvas = (canvas, name) => { const a = document.createElement('a'); a.download = name; a.href = canvas.toDataURL('image/png'); a.click(); };
+    const numberAnimate = (el, to, dur=900) => { const from = 0; const start = performance.now(); const step = (t)=>{ const p = Math.min((t-start)/dur,1); el.textContent = Math.round(from + (to-from)*p); if(p<1) requestAnimationFrame(step); }; requestAnimationFrame(step); };
+
+    // ===== Tabs & theme =====
+    $$('.tab').forEach(btn=>btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-section');
+      ['#dashboard-section','#staff-details-section','#project-details-section'].forEach(s=>$(s).classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      $$('.tab').forEach(b=>b.classList.remove('active-tab')); btn.classList.add('active-tab');
+    }));
+    $('#themeBtn').addEventListener('click', ()=>{ document.body.classList.toggle('dark'); });
+
+    // ===== KPI animation on load =====
+    numberAnimate(document.getElementById('kpiTotalProjects'), data.totals.projects);
+    numberAnimate(document.getElementById('kpiTotalStaff'), data.totals.staff);
+
+    // ===== Charts =====
+    const defaultChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#0B4F6C', font: { family: 'Cairo', weight: 'bold' } } },
+        tooltip: { rtl: true, bodyFont: { family: 'Cairo' }, titleFont: { family: 'Cairo', weight: 'bold' } }
+      },
+      scales: { x: { ticks: { color: '#0B4F6C', font: { family: 'Cairo' } }, grid: { display: false } }, y: { ticks: { color: '#0B4F6C', font: { family: 'Cairo' } }, grid: { color: '#e5e7eb' } } }
+    };
+
+    const brilliantBlues = ['#01BAEF', '#0B4F6C', '#75C5F0', '#A2D6F0'];
+
+    let charts = [];
+    function renderCharts(){
+      charts.forEach(c=>c.destroy()); charts = [];
+      const st = document.getElementById('projectStatusChart'); if (st){
+        charts.push(new Chart(st, { type:'doughnut', data:{ labels:['مشاريع قائمة','بانتظار الموافقة','منتهية فنياً','جديدة'], datasets:[{ data:[data.status.ongoing, data.status.waiting, data.status.completed, data.status.new], backgroundColor: brilliantBlues, borderColor:'#fff', borderWidth:2 }] }, options:{ ...defaultChartOptions, scales:{ x:{display:false}, y:{display:false} } } }));
+      }
+      const cmp = document.getElementById('projectsComparisonChart'); if (cmp){
+        charts.push(new Chart(cmp, { type:'bar', data:{ labels:['قائمة','بانتظار الموافقة','منتهية','جديدة'], datasets:[ { label:'يوليو 2025', data:[data.july.ongoing, data.july.waiting, data.july.completed, data.july.new], backgroundColor:'#75C5F0' }, { label:'أغسطس 2025', data:[data.august.ongoing, data.august.waiting, data.august.completed, data.august.new], backgroundColor:'#01BAEF' } ] }, options: defaultChartOptions }));
+      }
+      const staff = document.getElementById('staffDistributionChart'); if (staff){
+        charts.push(new Chart(staff, { type:'pie', data:{ labels:[wrapLabel('إدارة الخدمات والحلول الجيومكانية الذكية'), wrapLabel('إدارة نظم المعلومات الجغرافية والتطبيقات الذكية'), 'مكتب إدارة المشاريع', 'أخرى'], datasets:[{ data:[data.staffDistribution.services, data.staffDistribution.gis, data.staffDistribution.pmo, data.staffDistribution.other], backgroundColor: brilliantBlues, borderColor:'#fff', borderWidth:2 }] }, options:{ ...defaultChartOptions, scales:{ x:{display:false}, y:{display:false} } } }));
+      }
+      const dept = document.getElementById('departmentProjectsChart'); if (dept){
+        charts.push(new Chart(dept, { type:'bar', data:{ labels: data.deptProjects.labels.map(wrapLabel), datasets:[ { label:'مشاريع قائمة', data:data.deptProjects.ongoing, backgroundColor:'#01BAEF' }, { label:'بانتظار الموافقة', data:data.deptProjects.waiting, backgroundColor:'#75C5F0' }, { label:'مشاريع منتهية', data:data.deptProjects.done, backgroundColor:'#0B4F6C' } ] }, options:{ ...defaultChartOptions, indexAxis:'y', scales:{ x:{ stacked:true }, y:{ stacked:true } } } }));
+      }
+      // download buttons
+      document.querySelectorAll('.downloadChart').forEach((btn, i)=>{ btn.onclick = ()=> downloadCanvas(charts[i].canvas, `chart-${i+1}.png`); });
+    }
+
+    // ===== Issues grid render =====
+    function renderIssues(){
+      const grid = document.getElementById('issuesGrid');
+      grid.innerHTML = '';
+      data.issues.forEach((it, idx)=>{
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow p-6 border-r-4';
+        card.style.borderRightColor = idx % 2 ? 'var(--accent)' : 'var(--accent-2)';
+        card.innerHTML = `
+          <h3 class="font-bold text-lg text-[var(--brand)] mb-1">${it.title}</h3>
+          <p class="text-sm text-gray-500 mb-2">${it.tag}</p>
+          <p class="text-gray-700 mb-3"><span class="font-bold">المشكلة:</span> ${it.problem}</p>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <button class="solBtn px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-bold rounded">✨ حلول إبداعية</button>
+            <button class="trBtn px-3 py-1.5 bg-[var(--accent-2)] text-[var(--brand)] text-xs font-bold rounded">✨ ترجمة</button>
+          </div>`;
+        // Handlers
+        setTimeout(()=>{
+          card.querySelector('.solBtn').onclick = ()=> showLocalModal('حلول مقترحة', localSolutions(it.problem));
+          card.querySelector('.trBtn').onclick = ()=> showLocalModal('الترجمة الإنجليزية', localTranslate(it.problem));
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    // ===== Modal helpers (local, no external API) =====
+    const modal = document.getElementById('llmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const responseContent = document.getElementById('responseContent');
+    const loading = document.getElementById('loading');
+    const ttsButton = document.getElementById('ttsButton');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    let currentSummaryText = '';
+
+    function showLocalModal(title, content, speak=false){
+      modalTitle.textContent = title; loading.style.display = 'none'; responseContent.classList.remove('hidden');
+      responseContent.textContent = content; modal.style.display = 'grid';
+      ttsButton.classList.toggle('hidden', !speak); currentSummaryText = speak ? content : '';
+      // focus trap
+      closeModalBtn.focus();
+    }
+    function closeModal(){ modal.style.display = 'none'; }
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+    // Web Speech API for local TTS (Arabic)
+    ttsButton.addEventListener('click', ()=>{
+      if(!currentSummaryText) return; const u = new SpeechSynthesisUtterance(currentSummaryText); u.lang='ar-SA'; speechSynthesis.speak(u);
+    });
+
+    // ===== Local generators (replace external LLM) =====
+    function generatePerformanceSummary(){
+      const { projects } = data.totals; const { ongoing, waiting, completed, new: nw } = data.status;
+      const summary = `خلال أغسطس 2025، بلغ إجمالي المشاريع ${projects} مشروعًا، منها ${ongoing} قيد التنفيذ و${waiting} بانتظار الموافقة و${completed} منتهية فنيًا، إضافة إلى ${nw} مشاريع جديدة. يتركّز العبء التشغيلي على المشاريع القائمة، مع تحسن ملحوظ في وتيرة الإقفال مقارنة بيوليو. التوزيع الحالي للكوادر (64 فنيًا) يدعم مستويات الإنتاجية، مع حاجة إلى تعزيز تدقيق الجودة لخفض الارتجاع وتسريع الاعتمادات.`;
+      showLocalModal('ملخص الأداء الشهري', summary, true);
+    }
+
+    function localSolutions(problem){
+      return [
+        `١) إجراء تدقيق سببي سريع (15 دقيقة) لكل حالة مشابهة للمشكلة: تحديد الفجوة، مسؤولها، وموعد الإقفال؛ ربطها بقائمة تحقق إلزامية قبل التسليم.`,
+        `٢) تعيين مالك عملية (Process Owner) مؤقت لمدة أسبوعين لتطبيق معيار موحد للأدلة (صور/ملفات/نقاط GPS) ومتابعة الالتزام اليومي عبر لوحة مختصرة.`
+      ].join('\n');
+    }
+
+    function localActionPlan(){
+      const items = data.issues.map((it, i)=>`#${i+1} ${it.title}\n- توصيف: ${it.problem}\n- خطوات: 1) تعيين مسؤول وحصر المتأخرات. 2) قائمة تحقق جودة قبل التسليم. 3) مراجعة نظير (Peer Review). 4) تحديث العميل بخط زمني واضح.`).join('\n\n');
+      return items + `\n\nمؤشرات قياس: نسبة الاعتماد من أول مرة (First-Pass Yield)، ومتوسط عمر المعاملة (Aging)، وعدد التذاكر المفتوحة أسبوعيًا.`;
+    }
+
+    function localForecast(){
+      const j = data.july, a = data.august;
+      const deltaO = a.ongoing - j.ongoing; const deltaC = a.completed - j.completed;
+      const notes = [
+        `١) المشاريع القائمة قد تستقر حول ${a.ongoing + Math.max(0,deltaO-4)} مع تحويل جزء إلى "بانتظار الموافقة" عند تشديد مراجعات الجودة.`,
+        `٢) الاعتمادات المتوقعة ترتفع تدريجيًا إلى ~${a.completed + 3} شهريًا مع تطبيق مراجعة نظير وقائمة تحقق موحدة.`,
+        `٣) المشاريع الجديدة مرشحة للبقاء بين ${a.new-1} و${a.new+1} حسب موسم التعاقدات.`
+      ];
+      return notes.join('\n');
+    }
+
+    // Buttons
+    document.getElementById('summaryBtn').addEventListener('click', generatePerformanceSummary);
+    document.getElementById('forecastBtn').addEventListener('click', ()=> showLocalModal('توقعات الأداء للربع القادم', localForecast()));
+    document.getElementById('actionPlanBtn').addEventListener('click', ()=> showLocalModal('خطة العمل المقترحة', localActionPlan()));
+
+    // ===== Projects table =====
+    const projectsData = data.projects;
+    const sectionTitle = document.getElementById('project-section-title');
+    const tableBody = document.getElementById('projects-table-body');
+    function showProjects(dept){
+      const titles = { services:'مشاريع إدارة الخدمات والحلول الجيومكانية الذكية', pmo:'مشاريع مكتب إدارة المشاريع', gis:'مشاريع إدارة نظم المعلومات الجغرافية' };
+      sectionTitle.textContent = titles[dept];
+      tableBody.innerHTML = '';
+      (projectsData[dept]||[]).forEach(p=>{
+        const tr = document.createElement('tr'); tr.className='border-b border-gray-200 hover:bg-gray-50';
+        tr.innerHTML = `<td class='py-3 px-6'>${p.name}</td><td class='py-3 px-6'>${p.client}</td><td class='py-3 px-6'>${p.status}</td>`;
+        tableBody.appendChild(tr);
+      });
+    }
+    document.querySelectorAll('.deptBtn').forEach(btn=> btn.addEventListener('click', ()=> showProjects(btn.getAttribute('data-dept'))));
+
+    // CSV export
+    function exportProjectsCSV(){
+      const rows = [['القسم','اسم المشروع','الجهة','الحالة']];
+      Object.entries(projectsData).forEach(([dept, arr])=>{
+        arr.forEach(p=> rows.push([dept, p.name, p.client, p.status]));
+      });
+      const csv = rows.map(r=> r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a');
+      a.href = url; a.download = 'projects_aug2025.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+    document.getElementById('exportCsvBtn').addEventListener('click', exportProjectsCSV);
+
+    // Print
+    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+    // ===== Integrity check =====
+    function integrityCheck(){
+      const sum = Object.values(data.status).reduce((a,b)=>a+b,0);
+      if(sum !== data.totals.projects){
+        const warn = document.createElement('p');
+        warn.className = 'mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3';
+        warn.textContent = `⚠️ تحقق من صحة البيانات: مجموع الحالات (${sum}) لا يساوي إجمالي المشاريع (${data.totals.projects}).`;
+        document.querySelector('#dashboard-section header').appendChild(warn);
+      }
+    }
+
+    // ===== Init =====
+    function init(){
+      // set first tab active
+      document.querySelector('.tab[data-section="dashboard-section"]').classList.add('active-tab');
+      // default projects view
+      showProjects('services');
+      // charts
+      renderCharts();
+      // issues
+      renderIssues();
+      // integrity
+      integrityCheck();
+      // download buttons bound after charts
+      document.querySelectorAll('.downloadChart').forEach((btn, i)=> btn.addEventListener('click', ()=> downloadCanvas(charts[i].canvas, `chart-${i+1}.png`)));
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>
